@@ -38,3 +38,15 @@ FROM BIT_DB.FebSales Feb
 LEFT JOIN BIT_DB.customers cust
 ON FEB.orderid=cust.order_id
 WHERE Feb.Quantity>2;
+
+#8. What orders took place between February 13, 2019 and February 18, 2019?
+SELECT orderdate
+FROM BIT_DB.FebSales
+WHERE orderdate between '02/13/19 00:00' AND '02/18/19 00:00'
+ORDER BY orderdate DESC;
+
+#9. List all the products sold in Los Angeles in February, and include how many of each were sold.
+SELECT Product, price, quantity, sum(quantity) as totalSold
+FROM BIT_DB.FebSales
+WHERE location like "%Los Angeles%"
+GROUP BY Product;

@@ -1,0 +1,42 @@
+# I downloaded Spotify Data consisting of their current Top 50 Songs from Kaggle.
+# I then created the Table "Spotifydata" where I was able to insert this data.
+# Lastly, I was able to perform analytics on the data using SQL.
+
+# How I created the table
+CREATE TABLE BIT_DB.Spotifydata (
+id integer PRIMARY KEY,
+artist_name varchar NOT NULL,
+track_name varchar NOT NULL,
+track_id varchar NOT NULL,
+popularity integer NOT NULL,
+danceability decimal(4,3) NOT NULL,
+energy decimal(4,3) NOT NULL,
+key integer NOT NULL,
+loudness decimal(5,3) NOT NULL,
+mode integer NOT NULL,
+speechiness decimal(5,4) NOT NULL,
+acousticness decimal(6,5) NOT NULL,
+instrumentalness text NOT NULL,
+liveness decimal(5,4) NOT NULL,
+valence decimal(4,3) NOT NULL,
+tempo decimal(6,3) NOT NULL,
+duration_ms integer NOT NULL,
+time_signature integer NOT NULL 
+)
+
+# Once I inserted the cvs file containing the Spotify Song Data, I was able to start analyzing the data using SQL.
+
+# I decided to find out what the top 10 songs are based off their popularity rating 
+# I found that Olivia Rodrigo seems to be quite popular
+SELECT track_name, artist_name, popularity 
+FROM BIT_DB.Spotifydata
+ORDER BY popularity DESC
+LIMIT 10;
+
+# Then I decided to find out how which artists had a song with a key over 5 as well as how many of those songs they had in the top 50
+SELECT COUNT(artist_name), artist_name, track_name, key
+FROM BIT_DB.Spotifydata
+WHERE key > 5
+GROUP BY artist_name
+;
+

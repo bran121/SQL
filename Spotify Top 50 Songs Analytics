@@ -40,3 +40,18 @@ WHERE key > 5
 GROUP BY artist_name
 ;
 
+# Here I utlize a Common Table Expression (CTE) to find the average popularity of artists within the table.
+# Then the outer query is used to select information from the CTE and to label them as "Top Star" if their popularity rating is 90 or higher.
+WITH popularity_avg_CTE AS(
+    SELECT
+    SD.artist_name, AVG(SD.popularity) as avg_pop
+    FROM Spotifydata as SD
+    GROUP BY SD.artist_name
+    )
+
+SELECT artist_name,
+        avg_pop,
+            "Top Star" as TAG 
+
+FROM popularity_avg_CTE
+WHERE avg_pop>=90;

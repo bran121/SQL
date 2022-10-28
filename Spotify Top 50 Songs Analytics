@@ -33,7 +33,7 @@ FROM BIT_DB.Spotifydata
 ORDER BY popularity DESC
 LIMIT 10;
 
-# Then I decided to find out how which artists had a song with a key over 5 as well as how many of those songs they had in the top 50
+# Then I decided to find out how which artists had a song with a key over 5 as well as how many of those songs they had in the top 50.
 SELECT COUNT(artist_name), artist_name, track_name, key
 FROM BIT_DB.Spotifydata
 WHERE key > 5
@@ -55,3 +55,55 @@ SELECT artist_name,
 
 FROM popularity_avg_CTE
 WHERE avg_pop>=90;
+
+# The following query is used to find all track names and their associated invoice line ID's.
+SELECT t.name, i.invoicelineid
+FROM chinook.invoice_items i
+JOIN chinook.tracks t
+ON i.trackid = t.trackid;
+
+# This query is similiar to the previous one except is is used to display the track name as well as the artist name with their associated invoice line ID's.
+SELECT art.name as Artist, t.name as Track, i.invoicelineid
+FROM chinook.Invoice_items i
+LEFT JOIN chinook.tracks t
+ON i.invoiceid = t.trackid
+INNER JOIN chinook.albums a
+ON a.albumid = t.albumid
+LEFT JOIN chinook.artists art
+ON art.artistid =a.artistid;
+
+# This query is used to join all 4 tables Tracks, albums, media_types, and genres together.
+# Then I am able to display each song along with its associated album, media type and genre.
+SELECT t.name AS "Track Name", a.title AS "Album Title", m.name AS "Media Type", g.name AS "Genre"
+FROM chinook.tracks t 
+JOIN chinook.albums a
+ON a.albumid=t.albumid
+JOIN chinook.media_types m
+ON m.mediatypeid = t.mediatypeid
+JOIN chinook.genres g
+ON g.genreid = t.genreid;
+
+# This query is used to find the total sales made by each Sales Rep.
+SELECT emp.firstname, emp.lastname, ROUND(SUM(inv.total),2) as "Total Sales"
+FROM chinook.employees emp
+JOIN chinook.customers cust
+ON cust.supportrepid=emp.employeeid
+JOIN chinook.invoices inv
+ON inv.customerid=cust.customerid
+WHERE emp.title = "Sales Support Agent"
+GROUP BY emp.FirstName;
+
+# This query builds off the last one and is used to find the top 5 best performing Sales Reps in the year 2009.
+SELECT emp.firstname, emp.lastname, ROUND(SUM(inv.total),2) as "Total Sales"
+FROM chinook.employees emp
+JOIN chinook.customers cust
+ON cust.supportrepid=emp.employeeid
+JOIN chinook.invoices inv
+ON inv.customerid=cust.customerid
+
+WHERE emp.title = "Sales Support Agent"
+AND inv.invoicedate LIKE "%2009%"
+GROUP BY emp.FirstName
+ORDER BY ROUND(SUM(inv.total),2) DESC LIMIT 5;
+
+

@@ -1,0 +1,33 @@
+# In this project, I worked with data from a digital media store including table information about artists, albums, media tracks, invoices, and customers
+
+
+# Here I look for customers that are not located within the United States
+SELECT firstname, lastname, customerid, country 
+FROM chinook.customers
+WHERE country != "USA";
+
+# Here I am finding the invoices of customers who are from the United States using a JOIN clause 
+SELECT cust.firstname, cust.lastname, inv.invoiceid, inv.billingcountry, inv.invoiceDate
+FROM chinook.invoices as inv
+LEFT JOIN chinook.customers as cust
+on inv.customerid = cust.customerid
+WHERE inv.BillingCountry = "USA";
+
+# I am finding a query that shows the invoices associated with each sales agent using 2 JOIN clauses
+# The 2 JOIN clauses connect the the employees table with the customers table and the invoices table
+SELECT emp.firstname, emp.lastname, inv.invoiceid
+FROM chinook.employees as emp
+JOIN chinook.customers as cust
+    ON cust.SupportRepid=emp.employeeid
+JOIN chinook.invoices as inv
+    ON inv.customerid=cust.customerid
+    
+# This query finds the total sales made in 2009
+SELECT SUM(Total)
+FROM chinook.Invoices
+WHERE InvoiceDate BETWEEN '2009-01-01' AND '2009-12-31';
+
+# This query finds the number of invoices made in 2009
+SELECT COUNT(*) FROM chinook.invoices
+WHERE invoicedate
+BETWEEN "2009-01-01" AND "2009-12-31";

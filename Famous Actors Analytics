@@ -1,0 +1,67 @@
+// In this project, I created 3 separate tables: Actors, Awards, and Networth.
+// The three 3 tables were connected using JOIN clauses to see their information as well as any common characteristics they may share together.
+
+// The first table for Actors is created below using Famous Actors Will Smith, Dwayne Johnson, and Meryl Streep as the following INSERT values
+CREATE TABLE Actors (id INTEGER PRIMARY KEY AUTOINCREMENT, firstname TEXT, lastname TEXT, gender TEXT , age INTEGER);
+
+INSERT INTO Actors (firstname, lastname, gender, age)
+VALUES ("Dwayne", "Johnson", "Male", 35);
+INSERT INTO Actors (firstname, lastname, gender, age)
+VALUES ("Will", "Smith", "Male", 42);
+INSERT INTO Actors (firstname, lastname, gender, age)
+VALUES ("Meryl", "Streep", "Male", 60);
+
+// Here the Awards Table is created as well numerous Awards won by our Actors.
+CREATE TABLE Awards (id INTEGER PRIMARY KEY AUTOINCREMENT, ActorID INTEGER, Title TEXT, YearAwarded INTEGER);
+INSERT INTO Awards (Title, ActorId, YearAwarded)
+VALUES ("MTV Generation Award", 2,  2016);
+INSERT INTO Awards (Title, ActorId, YearAwarded)
+VALUES ("Honorary Cesar", 2,  2005);
+INSERT INTO Awards (Title, ActorId, YearAwarded)
+VALUES ("MTV Generation Award", 1,  2019);
+INSERT INTO Awards (Title, ActorId, YearAwarded)
+VALUES ("People's Choice for Favorite Movie Actor", 1,  2021);
+INSERT INTO Awards (Title, ActorId, YearAwarded)
+VALUES ("Honorary Cesar", 3,  2003);
+INSERT INTO Awards (Title, ActorId, YearAwarded)
+VALUES ("Kennedy Center Honors", 3,  2005);
+
+// Here the NetWorth Table is created along with the INSERT Values for actors' net worth.
+CREATE TABLE NetWorth (id INTEGER PRIMARY KEY AUTOINCREMENT, ActorID INTEGER, ActorNetWorth INTEGER);
+INSERT INTO NetWorth (ActorId, ActorNetWorth)
+VALUES (3,  160000000);
+INSERT INTO NetWorth (ActorId, ActorNetWorth)
+VALUES (2,  350000000);
+INSERT INTO NetWorth (ActorId, ActorNetWorth)
+VALUES (1,  800000000);
+
+// These SELECT * queries are simply here to visualize the tables easier and to see how we're going to connect the 3.
+SELECT * FROM Actors;
+SELECT * FROM Awards;
+SELECT * FROM NetWorth;
+
+// This query utilizes 2 LEFT JOIN's in order to connect all 3 tables and allows us to visualize how all the information is connected.
+SELECT A.firstname, A.lastname, A.age, AW.Title, NW.ActorNetWorth
+FROM Actors A
+LEFT JOIN Awards AW
+ON A.id = AW.actorID
+LEFT JOIN Networth NW
+ON A.id = NW.ActorID;
+
+// This query allows us to see which Actors from table have a networth of over 300 Million. We find out that those actors are Dwayne Johnson and Will Smith.
+SELECT A.firstname, A.lastname, NW.ActorNetWorth
+FROM Actors A
+LEFT JOIN Networth NW
+ON A.id = NW.ActorID
+WHERE NW.ActorNetWorth > 300000000
+;
+
+// This query searches our database to see which Actors have won the Honrary Cesar Award. We are able to find out the award belongs to both Will Smith and Meryl Streep.
+SELECT A.firstname, A.lastname,  AW.Title
+FROM Actors A
+LEFT JOIN Awards AW
+ON A.id = AW.actorID
+WHERE AW.Title = "Honorary Cesar"
+;
+
+

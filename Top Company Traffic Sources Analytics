@@ -1,0 +1,81 @@
+-- Finding the company's main source of customer traffic and sales profit
+
+-- Finding where the bulk of our company's sales are coming from by finding the UTM source, campaign, and referring domain to see which session(s) have the most sales
+SELECT
+		    utm_source, 
+        utm_campaign,
+        http_referer,
+        COUNT(DISTINCT website_session_id) AS sessions
+FROM website_sessions
+WHERE created_at < '2012-04-12'
+GROUP BY 
+	utm_source,
+	utm_campaign,
+  http_referer
+ORDER BY sessions DESC
+;
+
+/*Found the conversation rate from session to order to see if the gsearch nonbrand 
+  traffic source(that we found had the most session visits last query) would be profitable for the business or not. The CVR needs to be at least 4%, but
+  after querying the CVR, we found it would not be profitable as the traffic source has a CVR of 2.88% percent. The company will need to dial down on their search bids.
+*/
+SELECT 
+	  COUNT(DISTINCT ws.website_session_id) AS sessions,
+    COUNT(DISTINCT o.order_id) AS orders,
+    COUNT(DISTINCT o.order_id)/COUNT(DISTINCT ws.website_session_id) AS CVR
+FROM website_sessions ws
+	LEFT JOIN orders o
+		ON o.website_session_id = ws.website_session_id
+WHERE ws.created_at < '2012-04-14'
+	  AND utm_source ='gsearch'
+    AND utm_campaign = 'nonbrand'
+;
+
+-- Pulling gsearch nonbrand trended session volume, by week, to see if the changes since the last month have caused volume to drop at all.
+-- We find that the reduction in bids for this traffic source definitely had an impact on traffic volume.
+SELECT 
+	-- YEAR(created_at) AS year,
+	-- WEEK(created_at) AS week, -- commented out for better visual
+    MIN(DATE(created_at)) AS StartWeek,
+    COUNT(website_session_id) AS sessions
+FROM website_sessions
+WHERE created_at < '2012-05-10'
+	AND utm_source ='gsearch'
+    AND utm_campaign = 'nonbrand'
+    
+GROUP BY 
+	year(created_at), 
+    week(created_at)
+;
+
+-- We are trying to see if the device type has an impact on traffic volume. Here, we find that Desktop Sessions have close to 4% CVR
+-- While Mobile has below 1% CVR. The company should increase bids on Desktop traffic as they are our company's main customer traffic source.
+
+SELECT 
+	ws.device_type,
+	COUNT(DISTINCT ws.website_session_id) AS sessions,
+    COUNT(DISTINCT o.order_id) AS orders,
+    COUNT(DISTINCT o.order_id)/COUNT(DISTINCT ws.website_session_id) AS CVR
+FROM website_sessions ws
+	LEFT JOIN orders o
+		ON o.website_session_id = ws.website_session_id
+WHERE ws.created_at < '2012-05-11'
+	AND utm_source ='gsearch'
+    AND utm_campaign = 'nonbrand'
+GROUP BY device_type
+;
+
+-- Since the last query, the company has increased bids in Desktop Traffic. This query is to see if those bids were beneficial to the company.
+-- We find that Desktop Session visits have increased from 383 to 582 since the last 8 weeks. We can confirm that the big changes were a success.
+SELECT 
+	MIN(Date(created_at)) AS week_start_date,
+    COUNT(CASE WHEN device_type = 'desktop' THEN device_type ELSE NULL END) AS desktop_sessions,
+    COUNT(CASE WHEN device_type = 'mobile' THEN device_type ELSE NULL END) AS mobile_sessions
+FROM website_sessions
+	WHERE created_at < '2012-06-09'
+    AND website_sessions.created_at > '2012-04-15'
+    AND utm_source = 'gsearch'
+    AND utm_campaign ='nonbrand'
+GROUP BY
+WEEK(created_at)
+;

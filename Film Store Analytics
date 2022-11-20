@@ -1,0 +1,129 @@
+-- Using Multiple Joins and Aggregate Functions to find useful analytical data  for this store's owners.
+
+-- Finding the name of each manager at each store, along with the stores' full address
+SELECT 
+staff.first_name, 
+staff.last_name, 
+address.address, 
+address.district, 
+city.city, 
+country.country
+FROM store
+
+LEFT JOIN staff 
+	ON store.manager_staff_id=staff.staff_id
+LEFT JOIN address 
+	ON address.address_id = store.address_id
+LEFT JOIN city 
+	ON city.city_id = address.city_id
+LEFT JOIN country 
+	ON country.country_id = city.country_id
+;
+
+-- Finding a list of each item in stock, the store it's being held at, along with each film and its rating, rental rate and replacement cost.
+SELECT 
+	i.store_id,
+	i.inventory_id, 
+	f.title,
+    f.rating,
+	f.rental_rate, 
+	f.replacement_cost
+
+FROM inventory i
+	LEFT JOIN film f
+		ON f.film_id = i.film_id
+;
+
+/* 
+
+-- Rolled up data from previous query using GROUP BY and COUNT function to find how many items are in each category.
+SELECT 
+	i.store_id,
+    f.rating,
+    count(rating) as numInventory
+
+FROM inventory i
+	LEFT JOIN film f
+		ON f.film_id = i.film_id
+GROUP BY i.store_id, f.rating      
+;
+
+
+-- Finding each category of film's average replacement cost and total replacement cost in order to see what would happen if the category
+-- became unpopular within the stores.
+SELECT 
+	  i.store_id,
+    c.name as Category,
+    count(i.inventory_id) as films,
+    avg(f.replacement_cost) as average_replacement_cost,
+    SUM(f.replacement_cost) as total_replacement_cost
+
+FROM inventory i
+	LEFT JOIN film f
+		ON f.film_id = i.film_id
+	LEFT JOIN film_category fc
+		ON fc.film_id = f.film_id
+	LEFT JOIN category c
+		ON c.category_id = fc.category_id
+GROUP BY i.store_id, c.name
+ORDER BY total_replacement_cost DESC
+;
+
+
+-- Finding a complete list of all our customers, which stores they go to, if they're active, and their full address information.
+SELECT 
+	c.first_name,
+    c.last_name,
+    c.store_id,
+		CASE WHEN c.active = 1 THEN 'ACTIVE' 
+		WHEN c.active = 0 THEN 'NOT ACTIVE'
+		ELSE 'error'
+		END AS active_status,
+    a.address,
+    city.city,
+    country.country
+    
+FROM CUSTOMER c
+		LEFT JOIN address a
+			ON a.address_id = c.address_id
+		LEFT JOIN city
+			ON a.city_id = city.city_id
+		LEFT JOIN country
+			ON country.country_id = city.country_id
+
+;
+
+-- Finding out who our most valuable customers are, their total life time rentals, and the total amount of payments we've collected from them.
+SELECT 
+		c.first_name,
+        c.last_name,
+        count(r.rental_id) AS TotalLifeTimeRentals,
+        SUM(p.amount) AS TotalPayment
+        
+FROM customer c
+		LEFT JOIN rental r
+			ON r.customer_id = c.customer_id
+		LEFT JOIN payment p
+			ON p.rental_id = r.rental_id
+            
+GROUP BY c.first_name, c.last_name
+ORDER BY TotalPayment DESC
+	;
+    
+-- Using UNION function to combine the names of advisors and investors along with their company name.
+SELECT 
+	'advisor' AS Type,
+	first_name, 
+    last_name, 
+    'N/A' AS CompanyName
+FROM advisor
+
+UNION 
+
+SELECT 
+	'investor' AS Type,
+	first_name, 
+    last_name,
+    company_name
+FROM investor
+;

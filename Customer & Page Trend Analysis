@@ -1,0 +1,182 @@
+
+/* The following set of queries are to find out if the new landing page has resulted
+in a lower bounce rate or not */
+
+-- Finding the first website pageview ID's and a count of their of pageviews
+CREATE TEMPORARY TABLE sessions_w_min_pv_id_and_view_count
+SELECT
+	website_sessions.website_session_id,
+    MIN(website_pageviews.website_pageview_id) AS first_pageview_id,
+    COUNT(website_pageviews.website_pageview_id) AS count_pageviews
+    
+FROM website_sessions
+	LEFT JOIN website_pageviews
+		ON website_sessions.website_session_id = website_pageviews.website_session_id
+
+WHERE website_sessions.created_at > '2012-06-01' 
+	AND website_sessions.created_at < '2012-08-31'
+    AND website_sessions.utm_source = 'gsearch'
+    AND website_sessions.utm_campaign = 'nonbrand'
+
+GROUP BY website_sessions.website_session_id;
+
+
+-- Identifying the landing page of each session from the previous CTE
+CREATE TEMPORARY TABLE sessions_w_counts_and_lander_and_created_at
+SELECT
+	sessions_w_min_pv_id_and_view_count.website_session_id,
+    sessions_w_min_pv_id_and_view_count.first_pageview_id,
+    sessions_w_min_pv_id_and_view_count.count_pageviews,
+    website_pageviews.pageview_url AS landing_page,
+    website_pageviews.created_at AS session_created_at
+
+FROM sessions_w_min_pv_id_and_view_count
+	LEFT JOIN website_pageviews
+		ON sessions_w_min_pv_id_and_view_count.first_pageview_id = website_pageviews.website_pageview_id
+;
+
+-- This query allows us to see that the new lander-1 page has decreased the bounce rate from 60% to about 50%, meaning the new landing page was a success!
+SELECT 
+	YEARWEEK(session_created_at) AS year_week,
+    MIN(DATE(session_created_at)) AS week_start_date,
+    COUNT(DISTINCT website_session_id) AS total_sessions,
+	COUNT(DISTINCT CASE WHEN count_pageviews = 1 THEN website_session_id ELSE NULL END) * 1.0/COUNT(DISTINCT website_session_id) AS bounce_rate,
+    COUNT(DISTINCT CASE WHEN landing_page = '/home' THEN website_session_id ELSE NULL END) AS home_sessions,
+    COUNT(DISTINCT CASE WHEN landing_page = '/lander-1' THEN website_session_id ELSE NULL END) AS lander_sessions
+    
+FROM sessions_w_counts_and_lander_and_created_at
+
+GROUP BY yearweek(session_created_at)
+;
+
+
+
+
+/* In the following set of queries, we will be creating conversation funnels to see the click rate for every step of a customer's conversation funnel
+*/
+SELECT 
+	website_sessions.website_session_id,
+    website_pageviews.pageview_url,
+    -- website_pageviews.created_at AS pageviews_created_at,
+    CASE WHEN pageview_URL = '/products' THEN 1 ELSE 0 END AS products_page,
+	CASE WHEN pageview_URL = '/the-original-mr-fuzzy' THEN 1 ELSE 0 END AS mrfuzzy_page,
+    CASE WHEN pageview_URL = '/cart' THEN 1 ELSE 0 END AS cart_page,
+    CASE WHEN pageview_URL = '/shipping' THEN 1 ELSE 0 END AS shipping_page,
+    CASE WHEN pageview_URL = '/billing' THEN 1 ELSE 0 END AS billing_page,
+    CASE WHEN pageview_URL = '/thank-you-for-your-order' THEN 1 ELSE 0 END AS thankyou_page
+FROM website_sessions
+	LEFT JOIN website_pageviews
+		ON website_sessions.website_session_id = website_pageviews.website_session_id
+	WHERE website_sessions.utm_source = 'gsearch'
+		AND website_sessions.utm_campaign = 'nonbrand'
+        AND website_sessions.created_at > '2012-08-05'
+        AND website_sessions.created_at < '2012-09-05'
+	ORDER BY 
+		website_sessions.website_session_id,
+        website_pageviews.created_at;
+
+-- Take subquery above to create a CTE
+CREATE TEMPORARY TABLE session_level_made_it_flags
+SELECT 
+	website_session_id,
+    MAX(products_page) AS product_made_it,
+    MAX(mrfuzzy_page) AS mrfuzzy_made_it,
+    MAX(cart_page) AS cart_made_it,
+    MAX(shipping_page) AS shipping_made_it,
+    MAX(billing_page) AS billing_made_it,
+    MAX(thankyou_page) AS thankyou_made_it
+FROM(
+	SELECT 
+	website_sessions.website_session_id,
+    website_pageviews.pageview_url,
+    -- website_pageviews.created_at AS pageviews_created_at,
+    CASE WHEN pageview_URL = '/products' THEN 1 ELSE 0 END AS products_page,
+	CASE WHEN pageview_URL = '/the-original-mr-fuzzy' THEN 1 ELSE 0 END AS mrfuzzy_page,
+    CASE WHEN pageview_URL = '/cart' THEN 1 ELSE 0 END AS cart_page,
+    CASE WHEN pageview_URL = '/shipping' THEN 1 ELSE 0 END AS shipping_page,
+    CASE WHEN pageview_URL = '/billing' THEN 1 ELSE 0 END AS billing_page,
+    CASE WHEN pageview_URL = '/thank-you-for-your-order' THEN 1 ELSE 0 END AS thankyou_page
+FROM website_sessions
+	LEFT JOIN website_pageviews
+		ON website_sessions.website_session_id = website_pageviews.website_session_id
+	WHERE website_sessions.utm_source = 'gsearch'
+		AND website_sessions.utm_campaign = 'nonbrand'
+        AND website_sessions.created_at > '2012-08-05'
+        AND website_sessions.created_at < '2012-09-05'
+	ORDER BY 
+		website_sessions.website_session_id,
+        website_pageviews.created_at
+) AS pageview_level
+GROUP BY 
+	website_session_id;
+    
+-- Shows a result of all the sessions, as well as how many users made it to each part of the Conversation Funnel from the total sessions
+SELECT 
+	COUNT(DISTINCT website_session_id) AS sessions,
+    COUNT(DISTINCT CASE WHEN product_made_it = 1 THEN website_session_id ELSE NULL END) AS to_products,
+    COUNT(DISTINCT CASE WHEN mrfuzzy_made_it = 1 THEN website_session_id ELSE NULL END) AS to_mrfuzzy,
+    COUNT(DISTINCT CASE WHEN cart_made_it = 1 THEN website_session_id ELSE NULL END) AS to_cart,
+    COUNT(DISTINCT CASE WHEN shipping_made_it = 1 THEN website_session_id ELSE NULL END) AS to_shipping,
+    COUNT(DISTINCT CASE WHEN billing_made_it = 1 THEN website_session_id ELSE NULL END) AS to_billing,
+    COUNT(DISTINCT CASE WHEN thankyou_made_it = 1 THEN website_session_id ELSE NULL END) AS to_thankyou
+FROM session_level_made_it_flags;
+
+-- Finds click rate for each page, we'll find that the lander, mrfuzzy, and billing page all have a low click rate. This indicates that the company should work on improving those pages.
+SELECT 
+	
+    COUNT(DISTINCT CASE WHEN product_made_it = 1 THEN website_session_id ELSE NULL END)/COUNT(DISTINCT website_session_id) AS lander_click_rate,
+    COUNT(DISTINCT CASE WHEN mrfuzzy_made_it = 1 THEN website_session_id ELSE NULL END)/COUNT(DISTINCT CASE WHEN product_made_it = 1 THEN website_session_id ELSE NULL END) AS products_click_rate,
+    COUNT(DISTINCT CASE WHEN cart_made_it = 1 THEN website_session_id ELSE NULL END)/COUNT(DISTINCT CASE WHEN mrfuzzy_made_it = 1 THEN website_session_id ELSE NULL END) AS mrfuzzy_click_rate,
+    COUNT(DISTINCT CASE WHEN shipping_made_it = 1 THEN website_session_id ELSE NULL END)/COUNT(DISTINCT CASE WHEN cart_made_it = 1 THEN website_session_id ELSE NULL END) AS cart_click_rate,
+    COUNT(DISTINCT CASE WHEN billing_made_it = 1 THEN website_session_id ELSE NULL END)/COUNT(DISTINCT CASE WHEN shipping_made_it = 1 THEN website_session_id ELSE NULL END) AS shipping_click_rate,
+    COUNT(DISTINCT CASE WHEN thankyou_made_it = 1 THEN website_session_id ELSE NULL END)/COUNT(DISTINCT CASE WHEN billing_made_it = 1 THEN website_session_id ELSE NULL END) AS billing_click_rate
+FROM session_level_made_it_flags;
+    
+    
+    
+/* The following set of queries will be used to analyze an A/B conversation funnel test 
+to see if the new billing page has a better conversation rate
+*/
+-- This query allows us to find the starting (it ends up being first_pv_id=53550)
+SELECT
+	MIN(website_pageviews.website_pageview_id) AS first_pv_id
+FROM website_pageviews
+WHERE pageview_url = '/billing-2'
+;
+
+-- Subquery used to find which web_sessions go to  which landing page, and how many end up with an order_id
+SELECT
+	website_pageviews.website_session_id,
+    website_pageviews.pageview_url AS billing_version_seen
+    ,orders.order_id
+FROM website_pageviews
+	 LEFT JOIN orders
+		ON orders.website_session_id = website_pageviews.website_session_id
+WHERE website_pageviews.website_pageview_id >= 53550
+	AND website_pageviews.created_at < '2012-11-10'
+    AND website_pageviews.pageview_url IN ('/billing', '/billing-2')
+;
+
+
+-- Utilizes the previous subquery above in order to find each billing page's number of sessions, orders, and billing to order rate.
+-- We find that the billing-2 page has a lot more orders by about 100, and about a 15% higher click to order rate.
+SELECT
+	billing_version_seen,
+    COUNT(DISTINCT website_session_id) AS sessions,
+    COUNT(DISTINCT order_id) AS orders,
+    COUNT(DISTINCT order_id)/COUNT(DISTINCT website_session_id) AS billing_to_order_rate
+FROM(
+	SELECT
+		website_pageviews.website_session_id,
+		website_pageviews.pageview_url AS billing_version_seen
+		,orders.order_id
+	FROM website_pageviews
+	 LEFT JOIN orders
+		ON orders.website_session_id = website_pageviews.website_session_id
+	WHERE website_pageviews.website_pageview_id >= 53550
+		AND website_pageviews.created_at < '2012-11-10'
+		AND website_pageviews.pageview_url IN ('/billing', '/billing-2')
+) AS billing_session_w_orders
+
+GROUP BY billing_version_seen;
+

@@ -1,4 +1,4 @@
-#In this SQL, I'm querying a database with various months(tables) of customer orders to quantify statistics about the business's sales data.
+#In this SQL, I'm querying a database with various months of customer orders to quantify statistics about the business's sales data.
 
 #1. How many orders were placed in January? 
 SELECT COUNT(*)

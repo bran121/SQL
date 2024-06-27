@@ -1,0 +1,75 @@
+// Utilizing CTE's and Temp Tables to analyze Employee Tip and Salaries.
+// CTE for finding bakery transactions with no customer tip.
+WITH NoTipOrders(product_id,sum_order_total, sum_tip, count_tip) AS
+(
+SELECT product_id, SUM(order_total), SUM(tip), COUNT(tip)
+  FROM bakery.customer_orders
+  WHERE tip != 0
+  GROUP BY product_id
+), // CTE for finding orders WITH tip.
+TippedOrders AS (
+  SELECT product_id, SUM(order_total), SUM(tip), COUNT(tip)
+  FROM bakery.customer_orders
+  GROUP BY product_id
+)
+
+// Using a right join to find ALL transactions, with or without a tip
+SELECT *
+  FROM NoTipOrders NPO
+  RIGHT JOIN TippedOrders TO
+  ON NPO.product_id = TO.product_id;
+
+
+
+// Creating a CTE to find the employee(s) with the lowest salary in each department.
+WITH LowestSalary AS 
+(
+  SELECT DEPARTMENT, MIN(SALARY) AS LOWEST_SALARY
+  FROM employee_raise
+  GROUP BY DEPARTMENT
+)
+// Referring to the LowestSalary CTE to find employees with the lowest salary in each department and then give them a 15% raise.
+SELECT E.employee_id, E.department, E.salary AS OLD_SALARY, ROUND(E.SALARY * 1.15, 2) AS NEW_SALARY
+FROM employee_raise E
+JOIN LowestSalary LS
+ON E.DEPARTMENT = LS.DEPARTMENT AND E.SALARY = LS.LOWEST_SALARY
+ORDER BY NEW_SALARY DESC;
+
+
+
+// Utilizing Recursion in CTEs to find the Employee Hierarchy in the company
+// Creating a recursive CTE EmployeeHierarchy setting 1 as the base level(Boss with no superior).
+WITH RECURSIVE EmployeeHierarchy AS (
+  SELECT EMPLOYEE_ID, 1 AS LEVEL
+  FROM employee_hierarchy
+  WHERE SUPERVISOR_ID IS NULL
+
+  UNION ALL
+
+  // Joining Boss table with Employee level table where the supervisor_id matches the corresponding supervisor's employee_id
+  SELECT H.EMPLOYEE_ID, EH.LEVEL + 1 AS LEVEL
+  FROM employee_hierarchy H
+    JOIN EmployeeHierarchy EH 
+      ON EH.EMPLOYEE_ID = H.SUPERVISOR_ID
+)
+// SELECT statement to show each employee's ID and Level within the organization, Level 1 being The Head of the company.
+SELECT EMPLOYEE_ID,LEVEL
+FROM EmployeeHierarchy
+ORDER BY EMPLOYEE_ID;
+
+
+
+// Creating TEMP tables to store employee information
+CREATE TEMPORARY TABLE EmployeeSalary
+(
+  employee_id INT PRIMARY_KEY,
+  first_name varchar(50) NOT NULL,
+  last_name varchar(50) NOT NULL,
+  salary FLOAT,
+  supervisor_level INT
+);
+
+// Finding employees with salary greater than 50000 from within the Temp table
+SELECT * 
+FROM EmployeeSalary
+where salary > 50000;

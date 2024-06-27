@@ -1,0 +1,54 @@
+// Creating Triggers and Events for Invoice Updates.
+
+// Trigger to update invoices total when an entry is inserted.
+DELIMITER $$
+CREATE TRIGGER update_invoices_with_payments
+  AFTER INSERT ON bakery_client_payments
+  FOR EACH ROW
+BEGIN
+  UPDATE bakery_client_invoices
+  SET total_paid = total_paid + NEW.amount_paid
+  where invoice_id = NEW.invoice_id;
+END $$
+DELIMITER ;
+
+// Inserting values into the payments table ot make sure our trigger is working correctly.
+INSERT INTO bakery_client_payments
+VALUES(11, 1001, 3, '2023-02-27', 1003.87);
+
+// Trigger to update invoices total when an entry is deleted.
+DELIMITER $$
+CREATE TRIGGER update_invoices_when_deleted
+  AFTER DELETE ON bakery_client_payments
+  FOR EACH ROW
+BEGIN
+  UPDATE bakery.client_invoices
+SET total_paid = total_paid - OLD.amount_paid
+WHERE invoice_id = OLD.invoice_id;
+END $$
+DELIMITER ;
+
+// Delete statement to test the update_invoices_when deleted trigger.
+DELETE FROM client_payments
+WHERE payment_id = 11;
+
+// New final total
+SELECT * 
+FROM bakery.client_invoices;
+
+
+
+// Creating trigger to delete old customer orders greater than 5 years
+DELIMITER $$
+CREATE EVENT delete_old_customer_orders
+ON SCHEDULE EVERY 30 SECOND
+DO
+BEGIN
+  DELETE 
+FROM bakery.customer_orders
+WHERE order_date < NOW() - INTERVAL 5 YEAR;
+END $$
+DELIMITER ;
+
+// View events
+SHOW EVENTS;

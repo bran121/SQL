@@ -1,0 +1,103 @@
+// Creating Stored Procedures to deal with large volumes of customer orders
+
+// Stored Prodecure to find Order Totals greater than $0.
+DELIMITER $$
+CREATE PROCEDURE large_order_totals()
+BEGIN
+  SELECT *
+  FROM bakery.customer_orders  
+  WHERE order_total > 0;
+END $$
+DELIMITER ;
+
+DELIMITER $$
+// Stored Procedure to find Order Totals greater than $5 or greater than $20.
+CREATE PROCEDURE large_order_totals2()
+BEGIN
+  SELECT *
+  FROM bakery.customer_orders  
+  WHERE order_total > 20;
+  SELECT * 
+  FROM bakery.customer_orders
+  WHERE order_total > 5;
+END $$
+DELIMITER ;
+
+DELIMITER $$
+// Stored Procedure to find Order Totals greater than $30, $50, or $70.
+CREATE PROCEDURE large_order_totals3()
+BEGIN
+  SELECT *
+  FROM bakery.customer_orders  
+  WHERE order_total > 50;
+  SELECT * 
+  FROM bakery.customer_orders
+  WHERE order_total > 30;
+  SELECT * 
+  FROM bakery.customer_orders
+  WHERE order_total > 70;
+END $$
+DELIMITER ;
+
+
+/// Calling the Stored Procedures
+CALL large_order_totals();
+CALL large_order_totals2();
+CALL large_order_totals3();
+
+
+
+// Stored Procedure to find bakery Product IDs and their Order Dates.
+DELIMITER $$
+CREATE PROCEDURE orders_by_product(p_product_id INT, p_order_date DATE)
+BEGIN
+  SELECT * 
+  FROM bakery.customer_orders
+  WHERE product_id = p_product_id
+  AND order_date = p.order_date;
+END $$
+DELIMITER;
+
+// A call to the orders_by_product Stored Procedure to find the bakery item linked to Product ID: '1001' and Order Date: '2020-01-30'.
+CALL orders_by_product(1001, '2020-01-30');
+
+// Stored Procedure to find orders with matching product IDS and to return ALL values if the parameter is passed in as NULL.
+DELIMITER $$
+CREATE PROCEDURE orders_by_product2(p_product_id INT, p_order_date DATE)
+BEGIN
+  IF p_product_id IS NULL
+  THEN SELECT * 
+    FROM bakery.customer_orders
+  ELSE
+  SELECT * 
+  WHERE product_id = p_product_id
+  END IF;
+END $$
+DELIMITER;
+
+// A call to the orders_by_product2 Stored Procedure using a NULL parameter to display the entirety of orders made.
+CALL orders_by_product2(NULL);
+
+
+// Stored Procedure to store order totals into the @sum_totals Output Parameter
+DROP PROCEDURE IF EXISTS sum_of_orders;
+DELIMITER $$
+CREATE PROCEDURE sum_of_orders(p_product_id INT, OUT sum_totals DECIMALS (9,2))
+BEGIN
+  SELECT SUM(order_total)
+  INTO sum_totals
+  FROM bakery.customer_orders
+  WHERE product_id = p_product_id;
+END $$
+DELIMITER ;
+
+// Calling Procedure to find the new sum total.
+SET @sum_totals = 0;
+CALL bakery.sum_of_orders(1001, @sum_totals);
+SELECT @sum_totals;
+
+// Using the output parameter from sum_of_orders Stored Procedure to find the product's sale revenue as a percentage of the orders
+SELECT ROUND(@sum_total/SUM(order_total) * 100, 2) AS Percentage_or_orders
+FROM bakery.customer_orders;
+
+

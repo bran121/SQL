@@ -27,7 +27,7 @@ INSERT INTO employees (employee_id, name, department_id) VALUES
 
 
 
-Scenario: You have two tables, employees and departments, and you want to find the names of employees who work in the "Sales" department.
+-- Scenario: You have two tables, employees and departments, and you want to find the names of employees who work in the "Sales" department.
 SELECT name
 FROM employees
 WHERE department_id = (
@@ -36,7 +36,7 @@ WHERE department_id = (
     WHERE department_name = 'Sales'
 );
 
-Scenario: You want to find employees whose salary is above the average salary in their department.
+-- Scenario: You want to find employees whose salary is above the average salary in their department.
 SELECT name, salary
 FROM employees e1
 WHERE salary > (
@@ -78,7 +78,7 @@ INSERT INTO departments (department_id, department_name) VALUES
 (2, 'Engineering'),
 (3, 'HR');
 
-Scenario: You have a table of employees and you want to get a list of employees along with their department names using a CTE.
+-- Scenario: You have a table of employees and you want to get a list of employees along with their department names using a CTE.
 WITH EmployeeDepartments AS (
     SELECT e.employee_id, e.name, d.department_name
     FROM employees e
@@ -87,7 +87,7 @@ WITH EmployeeDepartments AS (
 SELECT *
 FROM EmployeeDepartments;
 
-Scenario: You want to find the total sales per department and then list departments with total sales greater than a certain amount.
+-- Scenario: You want to find the total sales per department and then list departments with total sales greater than a certain amount.
 CREATE TABLE sales (
     sale_id INT,
     department_id INT,
@@ -118,7 +118,7 @@ JOIN departments d ON hpd.department_id = d.department_id;
 
 ---- Usage of Stored Procedures
 -- Table Creation
-Scenario: Create a stored procedure to get employee details by their department.
+-- Scenario: Create a stored procedure to get employee details by their department.
 CREATE TABLE employees (
     employee_id INT,
     name VARCHAR(50),
@@ -145,7 +145,7 @@ END;
 EXEC GetEmployeesByDepartment @DepartmentID = 1;
 
 
-Scenario: Create a stored procedure to get the total sales of a department and return it as an output parameter.
+-- Scenario: Create a stored procedure to get the total sales of a department and return it as an output parameter.
 CREATE TABLE sales (
     sale_id INT,
     department_id INT,
@@ -175,7 +175,7 @@ DECLARE @TotalSales DECIMAL(10, 2);
 EXEC GetTotalSalesByDepartment @DepartmentID = 1, @TotalSales = @TotalSales OUTPUT;
 SELECT @TotalSales AS TotalSales;
 
-Scenario: Create a stored procedure to update an employee's department or add them if they don't exist.
+-- Scenario: Create a stored procedure to update an employee's department or add them if they don't exist.
 -- Table Creation
 CREATE PROCEDURE UpsertEmployee
     @EmployeeID INT,
@@ -227,7 +227,7 @@ EXEC UpsertEmployee @EmployeeID = 6, @Name = 'Frank', @DepartmentID = 1;
 
 
 ---- Usage of Functions
-Scenario: Create a function to return employees who have been hired within the last year.
+-- Scenario: Create a function to return employees who have been hired within the last year.
 -- Table Creation
 CREATE TABLE employees (
     employee_id INT,
@@ -257,7 +257,7 @@ FROM dbo.GetRecentHires();
 
 
 
-Scenario: Create a function to calculate the total sales for a specific department within a specific date range.
+-- Scenario: Create a function to calculate the total sales for a specific department within a specific date range.
 CREATE FUNCTION GetTotalSalesByDateRange
     (@DepartmentID INT, @StartDate DATE, @EndDate DATE)
 RETURNS DECIMAL(10, 2)
@@ -274,7 +274,7 @@ END;
 SELECT dbo.GetTotalSalesByDateRange(1, '2023-01-01', '2023-12-31') AS TotalSales;
 
 
-Scenario: Create a function to classify employees based on their years of service.
+-- Scenario: Create a function to classify employees based on their years of service.
 -- Table Creation
 CREATE TABLE employees (
     employee_id INT,
@@ -314,7 +314,7 @@ FROM employees;
 
 
 ---- Usage of Triggers
-Scenario: Automatically insert a record into an audit table whenever a new employee is added to the employees table.
+-- Scenario: Automatically insert a record into an audit table whenever a new employee is added to the employees table.
 -- Table Creation
 CREATE TABLE employees (
     employee_id INT PRIMARY KEY,
@@ -342,7 +342,7 @@ BEGIN
 END;
 
 
-Scenario: Prevent the deletion of an employee if they are part of a project.
+-- Scenario: Prevent the deletion of an employee if they are part of a project.
 -- Table Creation
 CREATE TABLE employees (
     employee_id INT PRIMARY KEY,
@@ -378,7 +378,7 @@ END;
 
 
 -- Usage of Window Functions
-Scenario: Assign a unique sequential integer to rows within a partition of a result set.
+-- Scenario: Assign a unique sequential integer to rows within a partition of a result set.
 -- Table Creation
 CREATE TABLE employees (
     employee_id INT,
@@ -399,7 +399,7 @@ SELECT name, department, salary,
 FROM employees;
 
 
-Scenario: Calculate the running total of salaries within each department.
+-- Scenario: Calculate the running total of salaries within each department.
 SELECT name, department, salary,
        SUM(salary) OVER (PARTITION BY department ORDER BY salary DESC) AS running_total
 FROM employees;

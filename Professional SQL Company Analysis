@@ -1,0 +1,410 @@
+-- Professional SQL Data Analysis Queries
+
+-- Usage of subqueries
+-- Table Creation
+CREATE TABLE employees (
+    employee_id INT,
+    name VARCHAR(50),
+    department_id INT
+);
+
+CREATE TABLE departments (
+    department_id INT,
+    department_name VARCHAR(50),
+    region VARCHAR(50)
+);
+
+INSERT INTO departments (department_id, department_name, region) VALUES
+(1, 'Sales', 'East'),
+(2, 'Engineering', 'West'),
+(3, 'HR', 'East');
+
+INSERT INTO employees (employee_id, name, department_id) VALUES
+(1, 'Alice', 1),
+(2, 'Bob', 2),
+(3, 'Charlie', 3),
+(4, 'David', 2);
+
+
+
+Scenario: You have two tables, employees and departments, and you want to find the names of employees who work in the "Sales" department.
+SELECT name
+FROM employees
+WHERE department_id = (
+    SELECT department_id
+    FROM departments
+    WHERE department_name = 'Sales'
+);
+
+Scenario: You want to find employees whose salary is above the average salary in their department.
+SELECT name, salary
+FROM employees e1
+WHERE salary > (
+    SELECT AVG(salary)
+    FROM employees e2
+    WHERE e1.department_id = e2.department_id
+);
+
+SELECT name
+FROM employees
+WHERE department_id IN (
+    SELECT department_id
+    FROM departments
+    WHERE region = 'East'
+);
+
+
+
+
+-- Usage of CTE's
+-- Table Creation 
+CREATE TABLE employees (
+    employee_id INT,
+    name VARCHAR(50),
+    department_id INT
+);
+
+CREATE TABLE departments (
+    department_id INT,
+    department_name VARCHAR(50)
+);
+
+INSERT INTO employees (employee_id, name, department_id) VALUES
+(1, 'Alice', 1),
+(2, 'Bob', 2),
+(3, 'Charlie', 1),
+(4, 'David', 3);
+
+INSERT INTO departments (department_id, department_name) VALUES
+(1, 'Sales'),
+(2, 'Engineering'),
+(3, 'HR');
+
+Scenario: You have a table of employees and you want to get a list of employees along with their department names using a CTE.
+WITH EmployeeDepartments AS (
+    SELECT e.employee_id, e.name, d.department_name
+    FROM employees e
+    JOIN departments d ON e.department_id = d.department_id
+)
+SELECT *
+FROM EmployeeDepartments;
+
+
+
+Scenario: You want to find the total sales per department and then list departments with total sales greater than a certain amount.
+CREATE TABLE sales (
+    sale_id INT,
+    department_id INT,
+    amount DECIMAL(10, 2)
+);
+
+INSERT INTO sales (sale_id, department_id, amount) VALUES
+(1, 1, 100.00),
+(2, 1, 150.00),
+(3, 2, 200.00),
+(4, 2, 300.00),
+(5, 3, 50.00);
+
+WITH DepartmentSales AS (
+    SELECT department_id, SUM(amount) AS total_sales
+    FROM sales
+    GROUP BY department_id
+),
+HighPerformingDepartments AS (
+    SELECT department_id, total_sales
+    FROM DepartmentSales
+    WHERE total_sales > 200
+)
+SELECT d.department_name, hpd.total_sales
+FROM HighPerformingDepartments hpd
+JOIN departments d ON hpd.department_id = d.department_id;
+
+
+-- Usage of Stored Procedures
+-- Table Creation
+Scenario: Create a stored procedure to get employee details by their department.
+CREATE TABLE employees (
+    employee_id INT,
+    name VARCHAR(50),
+    department_id INT
+);
+
+INSERT INTO employees (employee_id, name, department_id) VALUES
+(1, 'Alice', 1),
+(2, 'Bob', 2),
+(3, 'Charlie', 1),
+(4, 'David', 3);
+
+-- Created Stored Procedure
+CREATE PROCEDURE GetEmployeesByDepartment
+    @DepartmentID INT
+AS
+BEGIN
+    SELECT employee_id, name
+    FROM employees
+    WHERE department_id = @DepartmentID;
+END;
+
+-- Execute Stored Procedure
+EXEC GetEmployeesByDepartment @DepartmentID = 1;
+
+
+Scenario: Create a stored procedure to get the total sales of a department and return it as an output parameter.
+CREATE TABLE sales (
+    sale_id INT,
+    department_id INT,
+    amount DECIMAL(10, 2)
+);
+
+INSERT INTO sales (sale_id, department_id, amount) VALUES
+(1, 1, 100.00),
+(2, 1, 150.00),
+(3, 2, 200.00),
+(4, 2, 300.00),
+(5, 3, 50.00);
+
+-- Create Stored Procedure
+CREATE PROCEDURE GetTotalSalesByDepartment
+    @DepartmentID INT,
+    @TotalSales DECIMAL(10, 2) OUTPUT
+AS
+BEGIN
+    SELECT @TotalSales = SUM(amount)
+    FROM sales
+    WHERE department_id = @DepartmentID;
+END;
+
+-- Execute Stored Procedure
+DECLARE @TotalSales DECIMAL(10, 2);
+EXEC GetTotalSalesByDepartment @DepartmentID = 1, @TotalSales = @TotalSales OUTPUT;
+SELECT @TotalSales AS TotalSales;
+
+Scenario: Create a stored procedure to update an employee's department or add them if they don't exist.
+-- Table Creation
+CREATE PROCEDURE UpsertEmployee
+    @EmployeeID INT,
+    @Name VARCHAR(50),
+    @DepartmentID INT
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM employees WHERE employee_id = @EmployeeID)
+    BEGIN
+        UPDATE employees
+        SET name = @Name, department_id = @DepartmentID
+        WHERE employee_id = @EmployeeID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO employees (employee_id, name, department_id)
+        VALUES (@EmployeeID, @Name, @DepartmentID);
+    END
+END;
+
+-- Created Stored Procedure
+CREATE PROCEDURE UpsertEmployee
+    @EmployeeID INT,
+    @Name VARCHAR(50),
+    @DepartmentID INT
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM employees WHERE employee_id = @EmployeeID)
+    BEGIN
+        UPDATE employees
+        SET name = @Name, department_id = @DepartmentID
+        WHERE employee_id = @EmployeeID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO employees (employee_id, name, department_id)
+        VALUES (@EmployeeID, @Name, @DepartmentID);
+    END
+END;
+
+
+-- Execute Stored Procedure
+-- Update an existing employee
+EXEC UpsertEmployee @EmployeeID = 1, @Name = 'Alice Updated', @DepartmentID = 2;
+
+-- Insert a new employee
+EXEC UpsertEmployee @EmployeeID = 6, @Name = 'Frank', @DepartmentID = 1;
+
+
+
+-- Usage of Functions
+Scenario: Create a function to return employees who have been hired within the last year.
+-- Table Creation
+CREATE TABLE employees (
+    employee_id INT,
+    name VARCHAR(50),
+    hire_date DATE
+);
+
+INSERT INTO employees (employee_id, name, hire_date) VALUES
+(1, 'Alice', '2023-02-01'),
+(2, 'Bob', '2022-07-15'),
+(3, 'Charlie', '2021-11-30');
+
+-- Create Function
+CREATE FUNCTION GetRecentHires()
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT employee_id, name, hire_date
+    FROM employees
+    WHERE hire_date >= DATEADD(YEAR, -1, GETDATE())
+);
+
+-- Call Function
+SELECT *
+FROM dbo.GetRecentHires();
+
+
+
+Scenario: Create a function to calculate the total sales for a specific department within a specific date range.
+CREATE FUNCTION GetTotalSalesByDateRange
+    (@DepartmentID INT, @StartDate DATE, @EndDate DATE)
+RETURNS DECIMAL(10, 2)
+AS
+BEGIN
+    DECLARE @Total DECIMAL(10, 2);
+    SELECT @Total = SUM(amount)
+    FROM sales
+    WHERE department_id = @DepartmentID AND sale_date BETWEEN @StartDate AND @EndDate;
+    RETURN @Total;
+END;
+
+-- Call Function
+SELECT dbo.GetTotalSalesByDateRange(1, '2023-01-01', '2023-12-31') AS TotalSales;
+
+
+Scenario: Create a function to classify employees based on their years of service.
+-- Table Creation
+CREATE TABLE employees (
+    employee_id INT,
+    name VARCHAR(50),
+    hire_date DATE
+);
+
+INSERT INTO employees (employee_id, name, hire_date) VALUES
+(1, 'Alice', '2015-01-15'),
+(2, 'Bob', '2018-05-23'),
+(3, 'Charlie', '2020-08-30');
+
+-- Create Function
+CREATE FUNCTION GetEmployeeClassification
+    (@HireDate DATE)
+RETURNS VARCHAR(50)
+AS
+BEGIN
+    DECLARE @Classification VARCHAR(50);
+    DECLARE @YearsOfService INT;
+    
+    SET @YearsOfService = DATEDIFF(YEAR, @HireDate, GETDATE());
+    
+    IF @YearsOfService >= 5
+        SET @Classification = 'Senior';
+    ELSE IF @YearsOfService >= 3
+        SET @Classification = 'Mid-Level';
+    ELSE
+        SET @Classification = 'Junior';
+    
+    RETURN @Classification;
+END;
+
+-- Call Function
+SELECT name, dbo.GetEmployeeClassification(hire_date) AS Classification
+FROM employees;
+
+
+-- Usage of Triggers
+Scenario: Automatically insert a record into an audit table whenever a new employee is added to the employees table.
+-- Table Creation
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY,
+    name VARCHAR(50),
+    department_id INT
+);
+
+CREATE TABLE employee_audit (
+    audit_id INT IDENTITY PRIMARY KEY,
+    employee_id INT,
+    name VARCHAR(50),
+    department_id INT,
+    action_time DATETIME DEFAULT GETDATE()
+);
+
+Trigger creation:
+CREATE TRIGGER trg_AfterInsert_Employee
+ON employees
+AFTER INSERT
+AS
+BEGIN
+    INSERT INTO employee_audit (employee_id, name, department_id)
+    SELECT employee_id, name, department_id
+    FROM inserted;
+END;
+
+
+Scenario: Prevent the deletion of an employee if they are part of a project.
+-- Table Creation
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY,
+    name VARCHAR(50)
+);
+
+CREATE TABLE projects (
+    project_id INT PRIMARY KEY,
+    project_name VARCHAR(50)
+);
+
+CREATE TABLE employee_projects (
+    employee_id INT,
+    project_id INT,
+    PRIMARY KEY (employee_id, project_id)
+);
+
+-- Trigger Creation
+CREATE TRIGGER trg_InsteadOfDelete_Employee
+ON employees
+INSTEAD OF DELETE
+AS
+BEGIN
+    IF EXISTS (SELECT 1 FROM employee_projects ep JOIN deleted d ON ep.employee_id = d.employee_id)
+    BEGIN
+        RAISERROR ('Cannot delete employee assigned to a project', 16, 1);
+    END
+    ELSE
+    BEGIN
+        DELETE FROM employees WHERE employee_id IN (SELECT employee_id FROM deleted);
+    END
+END;
+
+
+-- Usage of Window Functions
+Scenario: Assign a unique sequential integer to rows within a partition of a result set.
+-- Table Creation
+CREATE TABLE employees (
+    employee_id INT,
+    name VARCHAR(50),
+    department VARCHAR(50),
+    salary DECIMAL(10, 2)
+);
+
+INSERT INTO employees (employee_id, name, department, salary) VALUES
+(1, 'Alice', 'Sales', 60000),
+(2, 'Bob', 'Engineering', 70000),
+(3, 'Charlie', 'Sales', 65000),
+(4, 'David', 'Engineering', 50000);
+
+-- Query
+SELECT name, department, salary,
+       ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) AS row_num
+FROM employees;
+
+
+Scenario: Calculate the running total of salaries within each department.
+SELECT name, department, salary,
+       SUM(salary) OVER (PARTITION BY department ORDER BY salary DESC) AS running_total
+FROM employees;
+

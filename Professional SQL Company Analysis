@@ -1,6 +1,6 @@
--- Professional SQL Data Analysis Queries
+-- Professional SQL Data Analysis Queries utilizing Subqueries, CTE's, Stored Procedures, Triggers, and Functions
 
--- Usage of subqueries
+---- Usage of Subqueries
 -- Table Creation
 CREATE TABLE employees (
     employee_id INT,
@@ -54,9 +54,7 @@ WHERE department_id IN (
 );
 
 
-
-
--- Usage of CTE's
+---- Usage of CTE's
 -- Table Creation 
 CREATE TABLE employees (
     employee_id INT,
@@ -89,8 +87,6 @@ WITH EmployeeDepartments AS (
 SELECT *
 FROM EmployeeDepartments;
 
-
-
 Scenario: You want to find the total sales per department and then list departments with total sales greater than a certain amount.
 CREATE TABLE sales (
     sale_id INT,
@@ -120,7 +116,7 @@ FROM HighPerformingDepartments hpd
 JOIN departments d ON hpd.department_id = d.department_id;
 
 
--- Usage of Stored Procedures
+---- Usage of Stored Procedures
 -- Table Creation
 Scenario: Create a stored procedure to get employee details by their department.
 CREATE TABLE employees (
@@ -230,7 +226,7 @@ EXEC UpsertEmployee @EmployeeID = 6, @Name = 'Frank', @DepartmentID = 1;
 
 
 
--- Usage of Functions
+---- Usage of Functions
 Scenario: Create a function to return employees who have been hired within the last year.
 -- Table Creation
 CREATE TABLE employees (
@@ -317,7 +313,7 @@ SELECT name, dbo.GetEmployeeClassification(hire_date) AS Classification
 FROM employees;
 
 
--- Usage of Triggers
+---- Usage of Triggers
 Scenario: Automatically insert a record into an audit table whenever a new employee is added to the employees table.
 -- Table Creation
 CREATE TABLE employees (

@@ -1,0 +1,559 @@
+-- Reviewing Professional SQL Company Interview Questions from Leetcode, DataLemur, Hackerrank, and more.
+
+-- Leetcode Section:
+/* 
+#1: Write a solution to find the rank of the scores. The ranking should be calculated according to the following rules:
+The scores should be ranked from the highest to the lowest.
+If there is a tie between two scores, both should have the same ranking.
+After a tie, the next ranking number should be the next consecutive integer value. In other words, there should be no holes between ranks.
+*/
+SELECT score, DENSE_RANK() OVER (ORDER BY score DESC) AS 'rank' 
+FROM Scores;
+
+/* 
+#2: Write a solution to report the first name, last name, city, and state of each person in the Person table. If the address of a personId is not present in the Address table, report null instead.
+Return the result table in any order. 
+*/
+SELECT Person.firstName, Person.lastName, Address.city, Address.state
+FROM Person LEFT OUTER JOIN Address
+  ON Person.personId = Address.personId
+
+/*
+#3: Write a solution to find the second highest salary from the Employee table. If there is no second highest salary, return null (return None in Pandas).
+*/
+WITH highest_salary AS (
+    SELECT MAX(salary) AS salary
+    FROM Employee
+)
+SELECT MAX(salary) AS SecondHighestSalary
+FROM Employee
+WHERE salary < (SELECT salary FROM highest_salary);
+
+/*
+#4: Write a solution to find the employees who earn more than their managers.
+Return the result table in any order.
+*/
+SELECT e2.name as Employee
+FROM employee e1
+INNER JOIN employee e2 ON e1.id = e2.managerID
+WHERE
+e1.salary < e2.salary
+
+
+/*
+#5: The cancellation rate is computed by dividing the number of canceled (by client or driver) requests with unbanned users by the total number of requests with unbanned users on that day.
+Write a solution to find the cancellation rate of requests with unbanned users (both client and driver must not be banned) each day between "2013-10-01" and "2013-10-03". Round Cancellation Rate to two decimal points.
+*/
+SELECT T.request_at as Day,ROUND(SUM( CASE
+WHEN T.status='cancelled_by_client' THEN 1 
+WHEN T.status='cancelled_by_driver' THEN 1
+ELSE 0 END)/count(*),2) 
+as 'Cancellation Rate' 
+FROM Trips T ,Users U
+WHERE T.client_id NOT IN (SELECT users_id from Users where role='client' AND banned='Yes') AND T.driver_id NOT IN (SELECT users_id from Users where role='driver' AND banned='Yes') AND 
+T.request_at between "2013-10-01" and "2013-10-03"
+GROUP BY T.request_at
+
+
+/*
+#6: Write a solution to find the first login date for each player.
+*/
+SELECT player_id,min(event_date) as first_login
+FROM Activity
+GROUP BY player_id
+
+/*
+#7: Write a solution to find the customer_number for the customer who has placed the largest number of orders.
+The test cases are generated so that exactly one customer will have placed more orders than any other customer.
+*/
+# Write your MySQL query statement below
+SELECT ROUND(SUM(tiv_2016), 2) AS tiv_2016
+FROM Insurance
+WHERE tiv_2015 IN (
+    SELECT tiv_2015
+    FROM Insurance
+    GROUP BY tiv_2015
+    HAVING COUNT(*) > 1
+)
+AND (lat, lon) IN (
+    SELECT lat, lon
+    FROM Insurance
+    GROUP BY lat, lon
+    HAVING COUNT(*) = 1
+)
+
+/*
+#8: Write a solution to find all the classes that have at least five students.
+*/
+SELECT class
+FROM Courses
+GROUP BY class
+HAVING COUNT(student) >= 5;
+
+/*
+#9: A country is big if:
+it has an area of at least three million (i.e., 3000000 km2), or
+it has a population of at least twenty-five million (i.e., 25000000).
+Write a solution to find the name, population, and area of the big countries.
+*/
+SELECT name ,population,area 
+FROM world 
+WHERE area >= 3000000 OR population >= 25000000
+
+/*
+#10: Write a solution to display the records with three or more rows with consecutive id's, and the number of people is greater than or equal to 100 for each.
+Return the result table ordered by visit_date in ascending order.
+*/
+WITH q1 as (
+SELECT *, id - row_number() over() as id_diff
+FROM stadium
+WHERE people > 99
+)
+SELECT id, visit_date, people
+FROM q1
+WHERE id_diff in (SELECT id_diff FRIN q1 GROUP BY id_diff HAVING count(*) > 2)
+ORDER by visit_date
+
+/*
+#11: Write a solution to find the people who have the most friends and the most friends number.
+The test cases are generated so that only one person has the most friends.
+*/
+WITH NEW as (
+(SELECT accepter_id as id, count(*) as num from RequestAccepted
+GROUP BY 1)
+UNION ALL
+(SELECT requester_id as id, count(*) as num from RequestAccepted
+GROUP BY 1)
+)
+SELECT id, sum(num) as num from new
+GROUP BY id
+ORDER BY 2 desc limit 1
+
+
+/*
+#12: Write a solution to find the names of all the salespersons who did not have any orders related to the company with the name "RED".
+*/
+SELECT s.name
+FROM SalesPerson s
+WHERE s.name not in
+    (SELECT s.name
+    FROM SalesPerson s
+        LEFT JOIN Orders o on s.sales_id = o.sales_id
+        LEFT JOIN Company c on o.com_id = c.com_id
+    WHERE c.name = 'Red')
+
+/*
+#13: Each node in the tree can be one of three types:
+"Leaf": if the node is a leaf node.
+"Root": if the node is the root of the tree.
+"Inner": If the node is neither a leaf node nor a root node.
+Write a solution to report the type of each node in the tree.
+*/
+SELECT id,
+    CASE 
+        WHEN p_id IS NULL THEN 'Root'
+        WHEN id IN (SELECT p_id FROM Tree)THEN 'Inner'
+        ELSE 'Leaf'
+        END AS type
+ FROM Tree
+
+/*
+#14: Report for every three line segments whether they can form a triangle.
+Return the result table in any order.
+*/
+SELECT *, IF(x+y>z and y+z>x and z+x>y, "Yes", "No") as triangle 
+FROM Triangle
+
+/*
+#15: Write a solution to swap the seat id of every two consecutive students. If the number of students is odd, the id of the last student is not swapped.
+Return the result table ordered by id in ascending order.
+*/
+SELECT 
+    id,
+    CASE
+        WHEN id % 2 = 0 THEN LAG(student) OVER(ORDER BY id)
+        ELSE COALESCE(LEAD(student) OVER(ORDER BY id), student)
+    END AS student
+FROM Seat
+
+/*
+#16:Write a solution to report the customer ids from the Customer table that bought all the products in the Product table.
+Return the result table in any order.
+*/
+SELECT c.customer_id
+FROM Customer c
+GROUP BY c.customer_id
+HAVING COUNT(DISTINCT c.product_key) = (SELECT COUNT(DISTINCT product_key) FROM Product);
+
+/*
+#17: Write an SQL query that reports the average experience years of all the employees for each project, rounded to 2 digits.
+Return the result table in any order.
+*/
+SELECT project.project_id, Round(Avg(Employee.experience_years),2) as average_years
+FROM project left join employee
+ON project.employee_id=employee.employee_id
+GROUP BY project.project_id;
+
+/*
+#18: Write a solution to report the products that were only sold in the first quarter of 2019. That is, between 2019-01-01 and 2019-03-31 inclusive.
+*/
+SELECT Product.product_id, Product.product_name FROM Product 
+JOIN Sales 
+ON Product.product_id = Sales.product_id 
+GROUP BY Sales.product_id 
+HAVING MIN(Sales.sale_date) >= "2019-01-01" AND MAX(Sales.sale_date) <= "2019-03-31";
+
+/*
+#19: Write a solution to find the daily active user count for a period of 30 days ending 2019-07-27 inclusively. A user was active on someday if they made at least one activity on that day.
+*/
+SELECT activity_date AS day, COUNT(DISTINCT user_id) AS active_users
+FROM Activity
+WHERE (activity_date > "2019-06-27" AND activity_date <= "2019-07-27")
+GROUP BY activity_date;
+
+/*
+#20: Compute the moving average of how much the customer paid in a seven days window (i.e., current day + 6 days before). average_amount should be rounded to two decimal places.
+*/
+SELECT DISTINCT visited_on,
+        SUM(amount) over w as amount,
+        ROUND((sum(amount) over w)/7, 2) as average_amount
+    FROM customer
+    WINDOW w AS ( 
+            ORDER BY visited_on
+            RANGE between interval 6 day PRECEDING and current row
+    )
+    LIMIT 6, 999
+
+-- DataLemur Section
+
+/*
+#21: Write a query to compare the average salary of employees in each department to the company's average salary for March 2024. Return the comparison result as 'higher', 
+'lower', or 'same' for each department. Display the department ID, payment month (in MM-YYYY format), and the comparison result. 
+*/
+WITH company_avg AS ( -- CTE from Step 1
+  SELECT 
+    payment_date,
+    AVG(amount) AS co_avg_salary
+  FROM salary
+  WHERE payment_date = '03/31/2024 00:00:00'
+  GROUP BY payment_date
+)
+, dept_avg AS ( -- CTE from Step 2
+  SELECT
+    e.department_id,
+    s.payment_date,
+    AVG(s.amount) AS dept_avg_salary
+  FROM salary AS s
+  INNER JOIN employee AS e
+    ON s.employee_id = e.employee_id
+  WHERE s.payment_date = '03/31/2024 00:00:00'
+  GROUP BY e.department_id, s.payment_date
+)
+SELECT
+  d.department_id,
+  TO_CHAR(d.payment_date, 'MM-YYYY') AS payment_date,
+  CASE  
+    WHEN d.dept_avg_salary > c.co_avg_salary THEN 'higher'
+    WHEN d.dept_avg_salary < c.co_avg_salary THEN 'lower'
+    ELSE 'same'
+  END AS comparison
+FROM dept_avg AS d
+INNER JOIN company_avg AS c
+  ON d.payment_date = c.payment_date;
+
+
+/*
+22: Recently, Zomato encountered an issue with their delivery system. Due to an error in the delivery driver instructions, each item's order was swapped with the item in the subsequent row. 
+As a data analyst, you're asked to correct this swapping error and return the proper pairing of order ID and item.
+If the last item has an odd order ID, it should remain as the last item in the corrected data. 
+For example, if the last item is Order ID 7 Tandoori Chicken, then it should remain as Order ID 7 in the corrected data.
+In the results, return the correct pairs of order IDs and items.
+*/
+WITH order_counts AS (
+  SELECT COUNT(order_id) AS total_orders 
+  FROM orders
+)
+SELECT
+  CASE
+    WHEN order_id % 2 != 0 AND order_id != total_orders THEN order_id + 1
+    WHEN order_id % 2 != 0 AND order_id = total_orders THEN order_id
+    ELSE order_id - 1
+  END AS corrected_order_id,
+  item
+FROM orders
+CROSS JOIN order_counts
+ORDER BY corrected_order_id;
+
+/*
+#23: If the last item has an odd order ID, it should remain as the last item in the corrected data. For example, if the last item is Order ID 7 Tandoori Chicken, then it should remain as Order ID 7 in the corrected data.
+In the results, return the correct pairs of order IDs and items.
+*/
+WITH order_counts AS (
+  SELECT COUNT(order_id) AS total_orders 
+  FROM orders
+)
+SELECT
+  CASE
+    WHEN order_id % 2 != 0 AND order_id != total_orders THEN order_id + 1
+    WHEN order_id % 2 != 0 AND order_id = total_orders THEN order_id
+    ELSE order_id - 1
+  END AS corrected_order_id,
+  item
+FROM orders
+CROSS JOIN order_counts
+ORDER BY corrected_order_id;
+
+/*
+#24: Amazon Web Services (AWS) is powered by fleets of servers. Senior management has requested data-driven solutions to optimize server usage.
+Write a query that calculates the total time that the fleet of servers was running. The output should be in units of full days.
+*/
+WITH running_time 
+AS (
+  SELECT
+    server_id,
+    session_status,
+    status_time AS start_time,
+    LEAD(status_time) OVER (
+      PARTITION BY server_id
+      ORDER BY status_time) AS stop_time
+  FROM server_utilization
+)
+SELECT
+  DATE_PART('days', JUSTIFY_HOURS(SUM(stop_time - start_time))) AS total_uptime_days
+FROM running_time
+WHERE session_status = 'start'
+  AND stop_time IS NOT NULL;
+
+/*
+#25: Write a query that outputs each employee id and whether they hit the quota or not ('yes' or 'no'). Order the results by employee id in ascending order.
+*/
+SELECT 
+  deals.employee_id,
+  CASE 
+    WHEN SUM(deals.deal_size) > quotas.quota THEN 'yes' 
+    ELSE 'no' 
+  END AS made_quota
+FROM deals
+INNER JOIN sales_quotas AS quotas
+  ON deals.employee_id = quotas.employee_id
+GROUP BY deals.employee_id, quotas.quota
+ORDER BY deals.employee_id;
+
+/*
+#26: Using the transactions table, identify any payments made at the same merchant with the same credit card for the same amount within 10 minutes of each other. Count such repeated payments.
+*/
+WITH payments AS (
+  SELECT 
+    merchant_id, 
+    EXTRACT(EPOCH FROM transaction_timestamp - 
+      LAG(transaction_timestamp) OVER(
+        PARTITION BY merchant_id, credit_card_id, amount 
+        ORDER BY transaction_timestamp)
+    )/60 AS minute_difference 
+  FROM transactions) 
+
+SELECT COUNT(merchant_id) AS payment_count
+FROM payments 
+WHERE minute_difference <= 10;
+
+/*
+#27: Assume you're given a table containing information about Wayfair user transactions for different products. Write a query to calculate the year-on-year growth rate for the total spend of each product, grouping the results by product ID.
+*/
+WITH yearly_spend_cte AS (
+  SELECT 
+    EXTRACT(YEAR FROM transaction_date) AS yr,
+    product_id,
+    spend AS curr_year_spend,
+    LAG(spend) OVER (
+      PARTITION BY product_id 
+      ORDER BY 
+        product_id, 
+        EXTRACT(YEAR FROM transaction_date)) AS prev_year_spend 
+  FROM user_transactions
+)
+
+SELECT 
+  yr,
+  product_id, 
+  curr_year_spend, 
+  prev_year_spend, 
+  ROUND(100 * 
+    (curr_year_spend - prev_year_spend)
+    / prev_year_spend
+  , 2) AS yoy_rate 
+FROM yearly_spend_cte;
+
+/*
+#28:You're given a table containing the item count for each order on Alibaba, along with the frequency of orders that have the same item count. 
+Write a query to retrieve the mode of the order occurrences. Additionally, if there are multiple item counts with the same mode, the results should be sorted in ascending order.
+*/
+SELECT item_count AS mode
+FROM items_per_order
+WHERE order_occurrences = (
+  SELECT MODE() WITHIN GROUP (ORDER BY order_occurrences DESC) 
+  FROM items_per_order
+)
+ORDER BY item_count;
+
+/*
+#29: Assume you're given a table with measurement values obtained from a Google sensor over multiple days with measurements taken multiple times within each day.
+Write a query to calculate the sum of odd-numbered and even-numbered measurements separately for a particular day and display the results in two different columns. Refer to the Example Output below for the desired format.
+*/
+WITH ranked_measurements AS (
+  SELECT 
+    CAST(measurement_time AS DATE) AS measurement_day, 
+    measurement_value, 
+    ROW_NUMBER() OVER (
+      PARTITION BY CAST(measurement_time AS DATE) 
+      ORDER BY measurement_time) AS measurement_num 
+  FROM measurements
+) 
+SELECT 
+  measurement_day, 
+  SUM(measurement_value) FILTER (WHERE measurement_num % 2 != 0) AS odd_sum, 
+  SUM(measurement_value) FILTER (WHERE measurement_num % 2 = 0) AS even_sum 
+FROM ranked_measurements
+GROUP BY measurement_day;
+
+/*
+#30: A phone call is considered an international call when the person calling is in a different country than the person receiving the call.
+What percentage of phone calls are international? Round the result to 1 decimal.
+*/
+WITH international_calls AS (
+SELECT 
+  caller.caller_id, 
+  caller.country_id,
+  receiver.caller_id, 
+  receiver.country_id
+FROM phone_calls AS calls
+LEFT JOIN phone_info AS caller
+  ON calls.caller_id = caller.caller_id
+LEFT JOIN phone_info AS receiver
+  ON calls.receiver_id = receiver.caller_id
+WHERE caller.country_id <> receiver.country_id
+)
+SELECT 
+  ROUND(
+    100.0 * COUNT(*)
+  / (SELECT COUNT(*) FROM phone_calls),1) AS international_call_pct
+FROM international_calls;
+
+
+-- HackerRank Section
+/*
+#31: Query the names of all the Japanese cities in the CITY table. The COUNTRYCODE for Japan is JPN.
+*/
+SELECT NAME FROM CITY
+WHERE COUNTRYCODE = "JPN";
+
+/*
+#32: Query all attributes of every Japanese city in the CITY table. The COUNTRYCODE for Japan is JPN.
+*/
+SELECT *
+FROM CITY
+WHERE COUNTRYCODE = "JPN"
+
+/*
+#33: Query the Name of any student in STUDENTS who scored higher than  Marks. Order your output by the last three characters of each name. 
+If two or more students both have names ending in the same last three characters (i.e.: Bobby, Robby, etc.), secondary sort them by ascending ID.
+*/
+SELECT NAME
+FROM STUDENTS
+WHERE Marks > 75
+ORDER BY lower(substr(name, -3, 3)), ID ASC
+
+/*
+#34:
+Generate the following two result sets:
+Query an alphabetically ordered list of all names in OCCUPATIONS, immediately followed by the first letter of each profession as a parenthetical (i.e.: enclosed in parentheses). For example: AnActorName(A), ADoctorName(D), AProfessorName(P), and ASingerName(S).
+Query the number of ocurrences of each occupation in OCCUPATIONS. Sort the occurrences in ascending order, and output them in the following format:
+*/
+SELECT concat(Name, "(", upper(substring(Occupation,1,1)), ")")
+FROM Occupations
+ORDER BY NAME;
+
+SELECT concat("There are a total of ", count(Occupation)," ", lower(occupation), "s.")
+FROM Occupations
+GROUP BY Occupation
+ORDER BY count(occupation) ASC;
+
+/*
+#35:
+Given the table schemas below, write a query to print the company_code, founder name, total number of lead managers, total number of senior managers, total number of managers, and total number of employees. Order your output by ascending company_code.
+*/
+SELECT C.company_code, C.founder, 
+count(distinct e.lead_manager_code), 
+count(distinct e.senior_manager_code), 
+count(distinct e.manager_code), 
+count(distinct e.employee_code)
+FROM Company C
+    INNER JOIN Employee E
+    ON E.company_code = C.company_code
+
+GROUP BY C.company_code, C.founder
+ORDER BY C.company_code;
+
+/*
+#36:
+Query the average population of all cities in CITY where District is California.
+*/
+SELECT avg(population)
+FROM CITY
+where District = "California"
+
+/*
+#37: Samantha was tasked with calculating the average monthly salaries for all employees in the EMPLOYEES table, but did not realize her keyboard's  key was broken until after completing the calculation. 
+She wants your help finding the difference between her miscalculation (using salaries with any zeros removed), and the actual average salary.
+Write a query calculating the amount of error (i.e.:  average monthly salaries), and round it up to the next integer.
+*/
+SELECT CEIL(AVG(Salary)-AVG(REPLACE(Salary,'0',''))) FROM EMPLOYEES;
+
+
+/*
+#38: Ketty gives Eve a task to generate a report containing three columns: Name, Grade and Mark. Ketty doesn't want the NAMES of those students who received a grade lower than 8. 
+The report must be in descending order by grade -- i.e. higher grades are entered first. 
+If there is more than one student with the same grade (8-10) assigned to them, order those particular students by their name alphabetically.
+Finally, if the grade is lower than 8, use "NULL" as their name and list them by their grades in descending order. 
+If there is more than one student with the same grade (1-7) assigned to them, order those particular students by their marks in ascending order.
+Write a query to help Eve.
+*/
+SELECT IF(GRADE < 8, NULL, NAME), GRADE, MARKS
+FROM STUDENTS 
+JOIN GRADES
+WHERE MARKS BETWEEN MIN_MARK AND MAX_MARK
+ORDER BY GRADE DESC, NAME
+
+/*
+#39: Julia just finished conducting a coding contest, and she needs your help assembling the leaderboard! Write a query to print the respective hacker_id and name of hackers who achieved full scores for more than one challenge. 
+Order your output in descending order by the total number of challenges in which the hacker earned a full score. 
+If more than one hacker received full scores in same number of challenges, then sort them by ascending hacker_id.
+*/
+SELECT S.hacker_id, h.name
+FROM SUBMISSIONS S
+INNER JOIN Challenges C 
+    ON S.challenge_id = C.challenge_id
+INNER JOIN Difficulty D 
+    ON C.difficulty_level = D.difficulty_level
+INNER JOIN Hackers H 
+    ON S.hacker_id = H.hacker_id
+WHERE S.score = D.score
+AND C.difficulty_level = d.difficulty_level
+GROUP BY H.name, H.Hacker_id
+HAVING count(s.hacker_id) > 1
+ORDER BY count(s.hacker_id) DESC, S.Hacker_id ASC
+
+/*
+#40: You are given three tables: Students, Friends and Packages. Students contains two columns: ID and Name. 
+Friends contains two columns: ID and Friend_ID (ID of the ONLY best friend). Packages contains two columns: ID and Salary (offered salary in $ thousands per month).
+*/
+SELECT S.Name
+FROM Students S
+JOIN Friends F
+    ON F.ID=S.ID
+JOIN Packages P1
+    ON P1.ID=S.ID
+JOIN Packages P2
+    ON P2.ID=F.Friend_ID
+    
+WHERE P2.salary > P1.salary
+ORDER BY P2.salary
